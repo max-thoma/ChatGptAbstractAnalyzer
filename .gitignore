@@ -115,9 +115,9 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Data files
-data/*
-!data/
-
 # Configuration files
 config.ini
+
+# Data files
+data/*.csv
+data/*.bib
