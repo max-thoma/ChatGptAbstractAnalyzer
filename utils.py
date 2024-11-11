@@ -1,9 +1,22 @@
-import pandas as pd
-import os
-from openai import OpenAI
+from typing import List
+
 import bibtexparser
+import instructor
+import pandas as pd
 from bibtexparser.bparser import BibTexParser
 from bibtexparser.customization import convert_to_unicode
+from openai import OpenAI
+from pydantic import BaseModel
+from pydantic import Field
+
+class PaperInfo(BaseModel):
+    """Data model for paper classification."""
+
+    evaluation_example: str
+    use_case: str
+    application_domain: str
+    technology_used: List[str] = Field(
+        description="List of acronyms of the technologies used in the paper. DO NOT WRITE OR EXPLAIN THE MEANING OF THE ACRONYMS!")
 
 def send_text_to_chatgpt(api_key, user_message, system_message="You are a helpful assistant.", model="gpt-3.5-turbo"):
     """Send a text prompt to the ChatGPT model and return the response."""
@@ -27,7 +40,20 @@ def send_text_to_chatgpt(api_key, user_message, system_message="You are a helpfu
         return assistant_message
 
     except Exception as e:
-        return f"An error occurred: {e}"    
+        return f"An error occurred: {e}"
+
+def send_text_to_chatgpt_structured(api_key, user_message, system_message="You are a helpful assistant.", model="gpt-3.5-turbo"):
+    client = instructor.from_openai(
+        OpenAI(api_key=api_key),
+        mode=instructor.Mode.JSON)
+
+    paper_info = client.chat.completions.create(
+        model=model,
+        response_model=PaperInfo,
+        messages=[{"role": "user",
+                   "content": user_message}],
+    )
+    return paper_info.model_dump_json(indent=2)
 
 def read_bibtex(file_path):
     """Reads a BibTeX file and returns a list of entries."""
@@ -71,8 +97,14 @@ def retrieve_additional_data(abstract, api_key):
                 """
     return send_text_to_chatgpt(api_key, prompt)
 
+
+def retrieve_additional_structured_data(abstract, api_key):
+    """Retrieve additional data from the abstract using GPT-3."""
+    prompt = f"Analyze the following abstract, try to be short and precise {abstract}"
+    return send_text_to_chatgpt_structured(api_key, prompt)
+
 def iterate_over_entries(data, api_key):
     for index, row in data.iterrows():
         abstract = row['abstract']
-        additional_data = retrieve_additional_data(abstract, api_key)
+        additional_data = retrieve_additional_structured_data(abstract, api_key)
         print(f"Abstract: {abstract}\nAdditional Data: {additional_data}\n")

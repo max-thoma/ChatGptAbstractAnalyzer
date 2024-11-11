@@ -1,8 +1,8 @@
-import openai
 import configparser
-import os
-import pandas as pd
-from utils import send_text_to_chatgpt, read_bibtex, bibtex_to_dataframe, retrieve_additional_data, iterate_over_entries
+
+import openai
+
+from utils import read_bibtex, bibtex_to_dataframe, iterate_over_entries
 
 config = configparser.ConfigParser()
 config.read('config.ini')
